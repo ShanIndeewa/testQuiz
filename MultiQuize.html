@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DW & BI: Multi-Quiz Study App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        .small-loader {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Style for active nav tab */
+        .nav-active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        #topic-nav {
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Data Warehousing & BI Study App</h1>
+            <p class="text-md sm:text-lg text-gray-600 mt-2">Select a topic and test your knowledge!</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav id="topic-nav" class="flex justify-center border-b border-gray-300 mb-8 bg-white/50 backdrop-blur-sm rounded-t-lg shadow-sm sticky top-0 z-10">
+            <!-- Nav items will be injected here -->
+        </nav>
+
+        <main id="quiz-page-container">
+            <h2 id="quiz-title" class="text-2xl font-bold text-center mb-6"></h2>
+            <div id="quiz-container" class="space-y-8 bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+                <!-- Quiz questions will be injected here -->
+            </div>
+
+            <div class="mt-8 text-center">
+                <button id="batch-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    Check All Unanswered Questions
+                </button>
+            </div>
+            
+            <div id="new-question-section" class="mt-10 text-center">
+                <button id="new-question-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
+                    ✨ Generate a New Question
+                </button>
+                <div id="new-question-loader" class="text-center py-6 hidden">
+                    <div class="loader mx-auto"></div>
+                    <p class="text-gray-600">✨ AI is creating a new question...</p>
+                </div>
+                <div id="new-question-container" class="mt-6"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const masterQuizData = {
+            '6.1.A': {
+                title: 'Data Concepts',
+                summary: 'Core definitions of data, information, and knowledge. Types of data (structured, unstructured, semi-structured). Concepts of Big Data, metadata, and the DAMA UK data quality dimensions (Accuracy, Completeness, Uniqueness, Consistency, Timeliness, Validity).',
+                questions: [
+                    { question: "What is the fundamental definition of 'Data'?", options: ["Data processed to provide meaning", "Raw facts and figures", "Understanding gained from information", "A collection of organized databases"], correctAnswer: "Raw facts and figures", concept: "The definition of Data" },
+                    { question: "Which of the following best describes 'Unstructured Data'?", options: ["Data in spreadsheets and relational databases", "JSON files and emails", "Images, videos, and social media posts", "Data with a predefined format"], correctAnswer: "Images, videos, and social media posts", concept: "Unstructured Data" }
+                ]
+            },
+            '6.1': {
+                title: 'Intro to Data Warehousing',
+                summary: 'The purpose and benefits of Data Warehousing. The four essential characteristics (Subject-Oriented, Integrated, Time-Variant, Non-Volatile). The difference between OLTP for databases and OLAP for data warehouses. The components of a data warehouse, including the ETL process.',
+                questions: [
+                    { question: "Which is NOT one of the four essential characteristics of a Data Warehouse?", options: ["Subject-Oriented", "Integrated", "Real-Time", "Non-Volatile"], correctAnswer: "Real-Time", concept: "Data Warehouse Characteristics" },
+                    { question: "A Data Warehouse is designed for which type of processing?", options: ["OLTP (Online Transaction Processing)", "OLAP (Online Analytical Processing)", "Real-Time Data Entry", "File System Management"], correctAnswer: "OLAP (Online Analytical Processing)", concept: "OLAP vs OLTP" }
+                ]
+            },
+            '6.2': {
+                title: 'Data Modeling',
+                summary: 'Data modeling concepts for warehouses focusing on denormalization. Key concepts: Fact Tables (measurable), Dimension Tables (descriptive), Star Schema (simple), and Snowflake Schema (normalized dimensions). Also covers Slowly Changing Dimensions (SCDs) like Type 1 (Overwrite) and Type 2 (Add New Row).',
+                questions: [
+                    { question: "In a data warehouse, which table stores quantitative, measurable data like 'sales amount'?", options: ["Dimension Table", "Fact Table", "Relational Table", "Lookup Table"], correctAnswer: "Fact Table", concept: "Fact vs. Dimension Tables" },
+                    { question: "Which type of Slowly Changing Dimension (SCD) preserves full historical data by adding a new record for each change?", options: ["SCD Type 0", "SCD Type 1", "SCD Type 2", "SCD Type 3"], correctAnswer: "SCD Type 2", concept: "Slowly Changing Dimensions (SCDs)" }
+                ]
+            },
+            '6.3': {
+                title: 'ETL Process',
+                summary: 'The ETL (Extract, Transform, Load) process. Extraction from sources. Transformation steps including Data Cleansing (handling missing data, outliers), Data Integration (combining sources), and Data Transformation (converting formats). Loading data into the warehouse.',
+                questions: [
+                    { question: "What does the 'T' in ETL stand for?", options: ["Transfer", "Translate", "Transform", "Tabulate"], correctAnswer: "Transform", concept: "ETL Process" },
+                    { question: "Correcting errors, removing duplicates, and handling missing values is known as what?", options: ["Data Extraction", "Data Loading", "Data Cleansing", "Data Reduction"], correctAnswer: "Data Cleansing", concept: "Data Cleansing" }
+                ]
+            },
+             '6.4': {
+                title: 'OLAP and Cubes',
+                summary: 'OLAP (Online Analytical Processing) for multi-dimensional data analysis. OLAP Cubes as a data structure. Components: Dimensions (categories like time, location), Facts (measurable data), Measures (aggregated values). Dimension Hierarchies for drill-down analysis.',
+                questions: [
+                    { question: "In an OLAP cube, what provides the descriptive context for the data (e.g., 'who, what, where, when')?", options: ["Facts", "Measures", "Hierarchies", "Dimensions"], correctAnswer: "Dimensions", concept: "OLAP Dimensions and Facts" },
+                    { question: "Analyzing data from a high-level summary down to fine detail in an OLAP cube is called what?", options: ["Slicing", "Drill-down", "Pivoting", "Dicing"], correctAnswer: "Drill-down", concept: "OLAP Operations" }
+                ]
+            },
+            '6.5': {
+                title: 'Data Mining',
+                summary: "Introduction to Data Mining. The KDD (Knowledge Discovery in Databases) process. Differentiating between Descriptive tasks (Clustering, Association Rule Mining) and Predictive tasks (Classification, Regression). Key techniques and their applications, like fraud detection (Anomaly Detection).",
+                questions: [
+                    { question: "Which data mining task is used to group similar data points together without predefined labels?", options: ["Classification", "Regression", "Clustering", "Association Rule Mining"], correctAnswer: "Clustering", concept: "Clustering" },
+                    { question: "Predicting a future value, such as a house price, is an example of which data mining task?", options: ["Classification", "Regression", "Clustering", "Anomaly Detection"], correctAnswer: "Regression", concept: "Regression" }
+                ]
+            },
+            '6.6': {
+                title: 'Data Visualization',
+                summary: 'The importance of transforming data into visual insights. Choosing the right visualization for the data relationship (e.g., bar charts for comparison, line graphs for trends). Core design principles like visual clarity, accessibility, and user experience (UX). Common tools like Tableau and Power BI.',
+                questions: [
+                    { question: "Which type of chart is best suited for showing trends over time?", options: ["Pie Chart", "Bar Chart", "Line Graph", "Scatter Plot"], correctAnswer: "Line Graph", concept: "Choosing Visualizations" },
+                    { question: "The practice of avoiding clutter and ensuring intuitive navigation in a dashboard relates to which design principle?", options: ["Color Theory", "Typography", "User Experience (UX)", "Data Complexity"], correctAnswer: "User Experience (UX)", concept: "Visualization Design Principles" }
+                ]
+            }
+        };
+
+        const state = { currentPage: '6.1.A' };
+
+        const topicNav = document.getElementById('topic-nav');
+        const quizTitle = document.getElementById('quiz-title');
+        const quizContainer = document.getElementById('quiz-container');
+        const batchSubmitBtn = document.getElementById('batch-submit-btn');
+        const newQuestionBtn = document.getElementById('new-question-btn');
+        const newQuestionLoader = document.getElementById('new-question-loader');
+        
+        // --- Core Functions ---
+
+        async function callGemini(prompt) {
+            const apiKey = "AIzaSyBt7V3L7-uxLOczuP3-2IRd0OYwngU3rDQ"; // Use your personal API key here
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                return result.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return "Sorry, there was an error getting a response from the AI.";
+            }
+        }
+
+        function renderPage(pageKey) {
+            state.currentPage = pageKey;
+            
+            const pageData = masterQuizData[pageKey];
+            quizTitle.textContent = pageData.title;
+            quizContainer.innerHTML = '';
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('nav-active', item.dataset.pageKey === pageKey);
+            });
+
+            pageData.questions.forEach((item, index) => {
+                const questionElement = createQuestionElement(item, index, pageKey);
+                quizContainer.appendChild(questionElement);
+            });
+        }
+        
+        function createQuestionElement(item, index, pageKey) {
+            const questionDiv = document.createElement('div');
+            questionDiv.className = `question-block border-b border-gray-200 pb-8 last:border-b-0`;
+            questionDiv.id = `q-${pageKey}-${index}`;
+
+            questionDiv.innerHTML = `
+                <p class="text-lg font-semibold mb-4">${index + 1}. ${item.question}</p>
+                <div class="options space-y-3">
+                    ${item.options.map(option => `
+                        <label class="flex items-center p-3 rounded-lg border border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input type="radio" name="question${index}" value="${option}" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                            <span class="ml-3 text-md text-gray-700">${option}</span>
+                        </label>
+                    `).join('')}
+                </div>
+                <div class="mt-4">
+                    <button data-index="${index}" class="individual-check-btn bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-1 px-4 rounded-md flex items-center gap-2">Check Answer</button>
+                </div>
+                <div class="feedback-container mt-3"></div>
+            `;
+            return questionDiv;
+        }
+        
+        // --- Event Handlers ---
+        
+        quizContainer.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('individual-check-btn')) {
+                const btn = e.target;
+                const index = btn.dataset.index;
+                const pageKey = state.currentPage;
+                const item = masterQuizData[pageKey].questions[index];
+                const questionDiv = document.getElementById(`q-${pageKey}-${index}`);
+                const userAnswer = (questionDiv.querySelector(`input[name=question${index}]:checked`) || {}).value;
+
+                if (!userAnswer) {
+                    alert('Please select an answer first!');
+                    return;
+                }
+                
+                btn.disabled = true;
+                btn.innerHTML = `<span class="small-loader loader"></span> Checking...`;
+
+                const prompt = `Evaluate this answer for the question "${item.question}". The correct answer is "${item.correctAnswer}". The user chose "${userAnswer}". Explain clearly and concisely why the user is correct or incorrect based on data warehousing concepts.`;
+                const feedbackText = await callGemini(prompt);
+                
+                const feedbackContainer = questionDiv.querySelector('.feedback-container');
+                const isCorrect = userAnswer === item.correctAnswer;
+                const cardClass = isCorrect ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800';
+                feedbackContainer.innerHTML = `<div class="p-3 rounded-lg border-l-4 ${cardClass}">${feedbackText.replace(/\n/g, '<br>')}</div>`;
+
+                questionDiv.querySelectorAll('input[type=radio]').forEach(radio => radio.disabled = true);
+                btn.remove();
+            }
+        });
+        
+        batchSubmitBtn.addEventListener('click', () => {
+             document.querySelectorAll('.individual-check-btn:not(:disabled)').forEach(btn => btn.click());
+        });
+
+        newQuestionBtn.addEventListener('click', async () => {
+            newQuestionBtn.disabled = true;
+            newQuestionLoader.classList.remove('hidden');
+            
+            const pageData = masterQuizData[state.currentPage];
+            const existingQuestions = pageData.questions.map(q => q.question).join('; ');
+            const prompt = `Based on this lecture summary: "${pageData.summary}", create one new, challenging multiple-choice quiz question that is different from these existing questions: "${existingQuestions}". Format the response as a single, valid JSON object with keys: "question", "options" (array of 4 strings), and "correctAnswer". Do not add any other text.`;
+
+            const responseText = await callGemini(prompt);
+            newQuestionLoader.classList.add('hidden');
+
+            try {
+                const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                const newQ = JSON.parse(jsonString);
+                
+                masterQuizData[state.currentPage].questions.push(newQ);
+                const newIndex = masterQuizData[state.currentPage].questions.length - 1;
+                const questionElement = createQuestionElement(newQ, newIndex, state.currentPage);
+                quizContainer.appendChild(questionElement);
+                questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (e) {
+                console.error("Failed to parse new question JSON:", e, "Raw response:", responseText);
+                alert("Sorry, there was an error generating a new question. Please try again.");
+            }
+            newQuestionBtn.disabled = false;
+        });
+        
+        // --- Initialization ---
+        
+        function initializeApp() {
+            Object.keys(masterQuizData).forEach(key => {
+                const navItem = document.createElement('button');
+                navItem.className = 'nav-item p-4 border-b-2 border-transparent text-gray-500 hover:text-blue-600 transition-colors duration-150 ease-in-out';
+                navItem.textContent = masterQuizData[key].title;
+                navItem.dataset.pageKey = key;
+                navItem.addEventListener('click', () => renderPage(key));
+                topicNav.appendChild(navItem);
+            });
+            renderPage(state.currentPage);
+        }
+
+        initializeApp();
+    </script>
+
+</body>
+</html>
