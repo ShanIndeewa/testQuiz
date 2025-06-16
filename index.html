@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DW & BI: Multi-Quiz Study App</title>
+    <title>DW & BI: Advanced Study App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -28,7 +28,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Style for active nav tab */
         .nav-active {
             border-bottom-color: #3b82f6;
             color: #3b82f6;
@@ -36,6 +35,10 @@
         }
         #topic-nav {
             flex-wrap: wrap;
+        }
+        /* Modal Styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
         }
     </style>
 </head>
@@ -47,110 +50,182 @@
             <p class="text-md sm:text-lg text-gray-600 mt-2">Select a topic and test your knowledge!</p>
         </header>
 
-        <!-- Navigation Tabs -->
-        <nav id="topic-nav" class="flex justify-center border-b border-gray-300 mb-8 bg-white/50 backdrop-blur-sm rounded-t-lg shadow-sm sticky top-0 z-10">
-            <!-- Nav items will be injected here -->
-        </nav>
+        <nav id="topic-nav" class="flex justify-center border-b border-gray-300 mb-8 bg-white/50 backdrop-blur-sm rounded-t-lg shadow-sm sticky top-0 z-10"></nav>
 
         <main id="quiz-page-container">
             <h2 id="quiz-title" class="text-2xl font-bold text-center mb-6"></h2>
-            <div id="quiz-container" class="space-y-8 bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
-                <!-- Quiz questions will be injected here -->
-            </div>
+            <div id="quiz-container" class="space-y-8 bg-white p-6 sm:p-8 rounded-2xl shadow-lg"></div>
 
             <div class="mt-8 text-center">
-                <button id="batch-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                <button id="batch-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
                     Check All Unanswered Questions
                 </button>
             </div>
             
-            <div id="new-question-section" class="mt-10 text-center">
-                <button id="new-question-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
+            <div id="new-question-section" class="mt-10 text-center flex flex-col sm:flex-row justify-center items-center gap-4">
+                <button id="new-question-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
                     ✨ Generate a New Question
                 </button>
-                <div id="new-question-loader" class="text-center py-6 hidden">
-                    <div class="loader mx-auto"></div>
-                    <p class="text-gray-600">✨ AI is creating a new question...</p>
-                </div>
-                <div id="new-question-container" class="mt-6"></div>
+                <button id="bulk-generate-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    📚 Generate Bulk Questions
+                </button>
+            </div>
+            <div id="new-question-loader" class="text-center py-6 hidden">
+                <div class="loader mx-auto"></div>
+                <p class="text-gray-600">✨ AI is creating new questions...</p>
             </div>
         </main>
+    </div>
+
+    <!-- Bulk Generate Modal -->
+    <div id="bulk-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm">
+            <h3 class="text-lg font-bold mb-4">Generate Bulk Questions</h3>
+            <p class="text-sm text-gray-600 mb-4">How many new questions would you like to generate for this topic?</p>
+            <input type="number" id="bulk-amount-input" class="w-full p-2 border border-gray-300 rounded-md" min="1" max="10" value="3">
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-bulk-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                <button id="confirm-bulk-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Generate</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const masterQuizData = {
             '6.1.A': {
                 title: 'Data Concepts',
-                summary: 'Core definitions of data, information, and knowledge. Types of data (structured, unstructured, semi-structured). Concepts of Big Data, metadata, and the DAMA UK data quality dimensions (Accuracy, Completeness, Uniqueness, Consistency, Timeliness, Validity).',
+                summary: `**Data, Information, Knowledge**: Data is raw facts. Information is processed data with meaning. Knowledge is the understanding gained from information.
+                **Data Types**: Structured (organized, e.g., databases), Unstructured (no predefined format, e.g., images), Semi-structured (some structure, e.g., JSON, emails).
+                **Data Quality Dimensions (DAMA UK)**: Accuracy (represents real-world), Completeness (all necessary data is present), Uniqueness (no unnecessary duplication), Consistency (no conflicts between sources), Timeliness (up-to-date), Validity (conforms to rules).
+                **Metadata**: Data about data; provides context and helps in management.`,
                 questions: [
-                    { question: "What is the fundamental definition of 'Data'?", options: ["Data processed to provide meaning", "Raw facts and figures", "Understanding gained from information", "A collection of organized databases"], correctAnswer: "Raw facts and figures", concept: "The definition of Data" },
-                    { question: "Which of the following best describes 'Unstructured Data'?", options: ["Data in spreadsheets and relational databases", "JSON files and emails", "Images, videos, and social media posts", "Data with a predefined format"], correctAnswer: "Images, videos, and social media posts", concept: "Unstructured Data" }
+                    { question: "What is the fundamental definition of 'Data'?", options: ["Data processed to provide meaning", "Raw facts and figures", "Understanding gained from information", "A collection of organized databases"], correctAnswer: "Raw facts and figures", concept: "Definition of Data" },
+                    { question: "Which of the following is an example of 'Semi-Structured Data'?", options: ["A video file", "A relational database table", "An email with a subject and body", "A plain text document"], correctAnswer: "An email with a subject and body", concept: "Semi-Structured Data" },
+                    { question: "What is the primary purpose of 'Metadata'?", options: ["To store the largest datasets.", "To provide context and meaning by describing other data.", "To perform real-time processing.", "To ensure data validity."], correctAnswer: "To provide context and meaning by describing other data.", concept: "Metadata" },
+                    { question: "A customer's address being recorded correctly reflects which data quality dimension?", options: ["Completeness", "Accuracy", "Uniqueness", "Timeliness"], correctAnswer: "Accuracy", concept: "Data Quality Dimension: Accuracy" },
+                    { question: "Ensuring there are no conflicting values for the same metric across different reports relates to which data quality dimension?", options: ["Consistency", "Validity", "Completeness", "Accuracy"], correctAnswer: "Consistency", concept: "Data Quality Dimension: Consistency" }
                 ]
             },
             '6.1': {
                 title: 'Intro to Data Warehousing',
-                summary: 'The purpose and benefits of Data Warehousing. The four essential characteristics (Subject-Oriented, Integrated, Time-Variant, Non-Volatile). The difference between OLTP for databases and OLAP for data warehouses. The components of a data warehouse, including the ETL process.',
+                summary: `**Data Warehouse (DW)**: A centralized repository for analysis.
+                **DW Characteristics**: Subject-Oriented (organized around business subjects), Integrated (data from multiple sources is unified), Time-Variant (stores historical data), Non-Volatile (data is stable and not frequently changed).
+                **OLAP vs. OLTP**: DWs use OLAP (Online Analytical Processing) for complex analytical queries. Operational databases use OLTP (Online Transaction Processing) for fast, real-time transactions.
+                **DSS**: Decision Support Systems are interactive tools that aid decision-making, an early form of BI.`,
                 questions: [
-                    { question: "Which is NOT one of the four essential characteristics of a Data Warehouse?", options: ["Subject-Oriented", "Integrated", "Real-Time", "Non-Volatile"], correctAnswer: "Real-Time", concept: "Data Warehouse Characteristics" },
-                    { question: "A Data Warehouse is designed for which type of processing?", options: ["OLTP (Online Transaction Processing)", "OLAP (Online Analytical Processing)", "Real-Time Data Entry", "File System Management"], correctAnswer: "OLAP (Online Analytical Processing)", concept: "OLAP vs OLTP" }
+                    { question: "Which characteristic of a Data Warehouse means that data is stable and not typically updated or deleted?", options: ["Subject-Oriented", "Integrated", "Time-Variant", "Non-Volatile"], correctAnswer: "Non-Volatile", concept: "Data Warehouse Characteristics (Non-Volatile)" },
+                    { question: "A Data Warehouse is designed for which type of processing?", options: ["OLTP (Online Transaction Processing)", "OLAP (Online Analytical Processing)", "Real-Time Data Entry", "File System Management"], correctAnswer: "OLAP (Online Analytical Processing)", concept: "OLAP vs. OLTP" },
+                    { question: "What does it mean for a data warehouse to be 'Time-Variant'?", options: ["Data is updated in real-time.", "It contains data over a long period, showing history.", "Data processing speed varies over time.", "It only stores current data."], correctAnswer: "It contains data over a long period, showing history.", concept: "Data Warehouse Characteristics (Time-Variant)" },
+                    { question: "Which system is optimized for fast, real-time read/write operations like a bank transaction?", options: ["OLAP", "Data Warehouse", "OLTP", "DSS"], correctAnswer: "OLTP", concept: "OLTP Systems" },
+                    { question: "The process of collecting, cleaning, and storing data from various sources into a data warehouse is known as what?", options: ["SQL", "BI", "OLAP", "ETL"], correctAnswer: "ETL", concept: "ETL Process" }
                 ]
             },
             '6.2': {
                 title: 'Data Modeling',
-                summary: 'Data modeling concepts for warehouses focusing on denormalization. Key concepts: Fact Tables (measurable), Dimension Tables (descriptive), Star Schema (simple), and Snowflake Schema (normalized dimensions). Also covers Slowly Changing Dimensions (SCDs) like Type 1 (Overwrite) and Type 2 (Add New Row).',
+                summary: `**Normalization vs. Denormalization**: Normalization reduces redundancy (for OLTP). Denormalization intentionally adds redundancy to improve query performance (for OLAP).
+                **Fact Tables**: Store quantitative, measurable data (the 'what', e.g., sales amount).
+                **Dimension Tables**: Store descriptive attributes that provide context (the 'who, what, where, when', e.g., customer name, product category).
+                **Schemas**: Star Schema has a central fact table connected to single-level dimensions. Snowflake Schema has normalized dimensions (dimensions have sub-dimensions).
+                **Slowly Changing Dimensions (SCDs)**: Track historical changes in dimensions. Type 1 overwrites data (losing history). Type 2 adds a new row for each change (preserving history).`,
                 questions: [
-                    { question: "In a data warehouse, which table stores quantitative, measurable data like 'sales amount'?", options: ["Dimension Table", "Fact Table", "Relational Table", "Lookup Table"], correctAnswer: "Fact Table", concept: "Fact vs. Dimension Tables" },
-                    { question: "Which type of Slowly Changing Dimension (SCD) preserves full historical data by adding a new record for each change?", options: ["SCD Type 0", "SCD Type 1", "SCD Type 2", "SCD Type 3"], correctAnswer: "SCD Type 2", concept: "Slowly Changing Dimensions (SCDs)" }
+                    { question: "In a data warehouse model, which table stores the quantitative, measurable data like 'sales amount'?", options: ["Dimension Table", "Fact Table", "Relational Table", "Lookup Table"], correctAnswer: "Fact Table", concept: "Fact Tables" },
+                    { question: "Which data modeling schema is characterized by a central fact table connected to multiple, single-level dimension tables?", options: ["Snowflake Schema", "Galaxy Schema", "Relational Schema", "Star Schema"], correctAnswer: "Star Schema", concept: "Star Schema" },
+                    { question: "Which type of Slowly Changing Dimension (SCD) preserves full historical data by adding a new record for each change?", options: ["SCD Type 0", "SCD Type 1", "SCD Type 2", "SCD Type 3"], correctAnswer: "SCD Type 2", concept: "SCD Type 2" },
+                    { question: "The practice of intentionally adding redundant data to a database to improve query performance is called?", options: ["Normalization", "Denormalization", "Optimization", "Aggregation"], correctAnswer: "Denormalization", concept: "Denormalization" },
+                    { question: "In a 'Star Schema', what do the 'points' of the star represent?", options: ["Fact Tables", "Dimension Tables", "Foreign Keys", "Primary Keys"], correctAnswer: "Dimension Tables", concept: "Dimension Tables in Star Schema" }
                 ]
             },
             '6.3': {
                 title: 'ETL Process',
-                summary: 'The ETL (Extract, Transform, Load) process. Extraction from sources. Transformation steps including Data Cleansing (handling missing data, outliers), Data Integration (combining sources), and Data Transformation (converting formats). Loading data into the warehouse.',
+                summary: `**ETL**: Stands for Extract, Transform, and Load.
+                **Extract**: Gathering data from various sources (databases, files, APIs).
+                **Transform**: A multi-step phase including:
+                - **Data Cleansing**: Fixing errors, handling missing data, removing duplicates, identifying outliers.
+                - **Data Integration**: Combining data from multiple sources into a unified view.
+                - **Data Transformation**: Converting data formats, structures, and values.
+                **Load**: Storing the processed data into the target data warehouse.`,
                 questions: [
                     { question: "What does the 'T' in ETL stand for?", options: ["Transfer", "Translate", "Transform", "Tabulate"], correctAnswer: "Transform", concept: "ETL Process" },
-                    { question: "Correcting errors, removing duplicates, and handling missing values is known as what?", options: ["Data Extraction", "Data Loading", "Data Cleansing", "Data Reduction"], correctAnswer: "Data Cleansing", concept: "Data Cleansing" }
+                    { question: "The process of correcting errors, removing duplicates, and handling missing values is known as what?", options: ["Data Extraction", "Data Loading", "Data Cleansing", "Data Reduction"], correctAnswer: "Data Cleansing", concept: "Data Cleansing" },
+                    { question: "Which ETL phase involves gathering raw data from various systems like databases and APIs?", options: ["Extract", "Transform", "Load", "Cleanse"], correctAnswer: "Extract", concept: "Extract Phase" },
+                    { question: "Combining customer data from a sales database and a marketing platform into a single unified view is an example of:", options: ["Data Cleansing", "Data Reduction", "Data Integration", "Data Extraction"], correctAnswer: "Data Integration", concept: "Data Integration" },
+                    { question: "Converting date formats from 'MM/DD/YYYY' to 'YYYY-MM-DD' occurs during which ETL phase?", options: ["Extract", "Transform", "Load", "Staging"], correctAnswer: "Transform", concept: "Data Transformation" }
                 ]
             },
              '6.4': {
                 title: 'OLAP and Cubes',
-                summary: 'OLAP (Online Analytical Processing) for multi-dimensional data analysis. OLAP Cubes as a data structure. Components: Dimensions (categories like time, location), Facts (measurable data), Measures (aggregated values). Dimension Hierarchies for drill-down analysis.',
+                summary: `**OLAP (Online Analytical Processing)**: Technology for fast, multi-dimensional analysis.
+                **OLAP Cube**: The core structure for storing data in multiple dimensions.
+                **Cube Components**:
+                - **Dimensions**: Descriptive categories for grouping data (e.g., Time, Product, Location).
+                - **Facts**: Quantitative, measurable data points (e.g., Sales Amount, Units Sold).
+                - **Measures**: Aggregated values derived from facts (e.g., Total Sales, Average Price).
+                **Dimension Hierarchies**: Organize dimension data from general to specific (e.g., Year > Quarter > Month), enabling drill-down analysis.`,
                 questions: [
-                    { question: "In an OLAP cube, what provides the descriptive context for the data (e.g., 'who, what, where, when')?", options: ["Facts", "Measures", "Hierarchies", "Dimensions"], correctAnswer: "Dimensions", concept: "OLAP Dimensions and Facts" },
-                    { question: "Analyzing data from a high-level summary down to fine detail in an OLAP cube is called what?", options: ["Slicing", "Drill-down", "Pivoting", "Dicing"], correctAnswer: "Drill-down", concept: "OLAP Operations" }
+                    { question: "In an OLAP cube, what provides the descriptive context for the data (e.g., 'who, what, where, when')?", options: ["Facts", "Measures", "Hierarchies", "Dimensions"], correctAnswer: "Dimensions", concept: "OLAP Dimensions" },
+                    { question: "Analyzing data from a high-level summary down to fine detail in an OLAP cube is called what?", options: ["Slicing", "Drill-down", "Pivoting", "Dicing"], correctAnswer: "Drill-down", concept: "OLAP Drill-Down" },
+                    { question: "What is the term for a quantitative, measurable data point in an OLAP cube, such as 'Revenue' or 'Units Sold'?", options: ["Dimension", "Hierarchy", "Fact", "Level"], correctAnswer: "Fact", concept: "OLAP Facts" },
+                    { question: "A structure like 'Year > Quarter > Month' is an example of a:", options: ["Fact Table", "Measure Group", "Dimension Hierarchy", "Relational Key"], correctAnswer: "Dimension Hierarchy", concept: "Dimension Hierarchies" },
+                    { question: "OLAP systems are optimized for:", options: ["Fast transaction processing", "Complex analytical queries", "Data entry and updates", "Storing unstructured data"], correctAnswer: "Complex analytical queries", concept: "OLAP Optimization" }
                 ]
             },
             '6.5': {
                 title: 'Data Mining',
-                summary: "Introduction to Data Mining. The KDD (Knowledge Discovery in Databases) process. Differentiating between Descriptive tasks (Clustering, Association Rule Mining) and Predictive tasks (Classification, Regression). Key techniques and their applications, like fraud detection (Anomaly Detection).",
+                summary: `**Data Mining**: Process of discovering meaningful patterns in large datasets. It is a step within the KDD (Knowledge Discovery in Databases) process.
+                **Tasks**:
+                - **Descriptive**: Summarizes data characteristics (e.g., Clustering, Association Rule Mining).
+                - **Predictive**: Uses historical data to forecast future trends (e.g., Classification, Regression).
+                **Key Techniques**:
+                - **Clustering**: Grouping similar data points.
+                - **Classification**: Categorizing data into predefined classes.
+                - **Regression**: Assessing relationships between variables to predict continuous values.
+                - **Association Rule Mining**: Identifying relationships like 'if-then' patterns.
+                - **Anomaly Detection**: Identifying outliers, used for fraud detection.`,
                 questions: [
                     { question: "Which data mining task is used to group similar data points together without predefined labels?", options: ["Classification", "Regression", "Clustering", "Association Rule Mining"], correctAnswer: "Clustering", concept: "Clustering" },
-                    { question: "Predicting a future value, such as a house price, is an example of which data mining task?", options: ["Classification", "Regression", "Clustering", "Anomaly Detection"], correctAnswer: "Regression", concept: "Regression" }
+                    { question: "Predicting a future value, such as a house price, is an example of which data mining task?", options: ["Classification", "Regression", "Clustering", "Anomaly Detection"], correctAnswer: "Regression", concept: "Regression" },
+                    { question: "'Customers who buy bread also tend to buy milk' is an insight found using which technique?", options: ["Clustering", "Classification", "Association Rule Mining", "Regression"], correctAnswer: "Association Rule Mining", concept: "Association Rule Mining" },
+                    { question: "Detecting unusual credit card transactions is a primary application of:", options: ["Text Mining", "Anomaly Detection", "Sequential Pattern Mining", "Clustering"], correctAnswer: "Anomaly Detection", concept: "Anomaly Detection" },
+                    { question: "Which task categorizes data into predefined classes, like 'spam' or 'not spam'?", options: ["Regression", "Clustering", "Classification", "Association"], correctAnswer: "Classification", concept: "Classification" }
                 ]
             },
             '6.6': {
                 title: 'Data Visualization',
-                summary: 'The importance of transforming data into visual insights. Choosing the right visualization for the data relationship (e.g., bar charts for comparison, line graphs for trends). Core design principles like visual clarity, accessibility, and user experience (UX). Common tools like Tableau and Power BI.',
+                summary: `**Data Visualization**: Transforming data into visual forms (charts, graphs) to simplify complexity and enhance comprehension.
+                **Choosing Charts**: Match the visual to the data relationship. Use Bar Charts for comparison, Line Graphs for trends over time, and Pie Charts for composition (part-to-whole).
+                **Design Principles**:
+                - **Visual Clarity**: Making the data easy to see and understand.
+                - **Accessibility**: Ensuring people with disabilities can interpret the visuals.
+                - **User Experience (UX)**: Focuses on creating intuitive, uncluttered, and easy-to-navigate dashboards.`,
                 questions: [
-                    { question: "Which type of chart is best suited for showing trends over time?", options: ["Pie Chart", "Bar Chart", "Line Graph", "Scatter Plot"], correctAnswer: "Line Graph", concept: "Choosing Visualizations" },
-                    { question: "The practice of avoiding clutter and ensuring intuitive navigation in a dashboard relates to which design principle?", options: ["Color Theory", "Typography", "User Experience (UX)", "Data Complexity"], correctAnswer: "User Experience (UX)", concept: "Visualization Design Principles" }
+                    { question: "Which type of chart is best suited for showing trends over time?", options: ["Pie Chart", "Bar Chart", "Line Graph", "Scatter Plot"], correctAnswer: "Line Graph", concept: "Choosing Chart Types" },
+                    { question: "The practice of avoiding clutter and ensuring intuitive navigation in a dashboard relates to which design principle?", options: ["Color Theory", "Typography", "User Experience (UX)", "Data Complexity"], correctAnswer: "User Experience (UX)", concept: "UX in Visualization" },
+                    { question: "To show the proportion of parts to a whole, which chart is most effective?", options: ["Line Graph", "Histogram", "Pie Chart", "Heat Map"], correctAnswer: "Pie Chart", concept: "Pie Charts for Composition" },
+                    { question: "What is the primary goal of data visualization in a business context?", options: ["To make data look artistic", "To store data in a graphical database", "To simplify complex data for better decision-making", "To perform statistical calculations"], correctAnswer: "To simplify complex data for better decision-making", concept: "Goal of Data Visualization" },
+                    { question: "A bar chart is most effective for which type of data relationship?", options: ["Showing trends over a long period", "Comparing values across different categories", "Displaying the distribution of a single variable", "Showing the relationship between two variables"], correctAnswer: "Comparing values across different categories", concept: "Bar Charts for Comparison" }
                 ]
             }
         };
 
         const state = { currentPage: '6.1.A' };
-
+        
+        // --- DOM Elements ---
         const topicNav = document.getElementById('topic-nav');
         const quizTitle = document.getElementById('quiz-title');
         const quizContainer = document.getElementById('quiz-container');
         const batchSubmitBtn = document.getElementById('batch-submit-btn');
         const newQuestionBtn = document.getElementById('new-question-btn');
         const newQuestionLoader = document.getElementById('new-question-loader');
+        const bulkGenerateBtn = document.getElementById('bulk-generate-btn');
+        const bulkModal = document.getElementById('bulk-modal');
+        const cancelBulkBtn = document.getElementById('cancel-bulk-btn');
+        const confirmBulkBtn = document.getElementById('confirm-bulk-btn');
         
         // --- Core Functions ---
 
         async function callGemini(prompt) {
-           const apiKey = "AIzaSyBt7V3L7-uxLOczuP3-2IRd0OYwngU3rDQ"; // Use a placeholder
-           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const apiKey = "AIzaSyBt7V3L7-uxLOczuP3-2IRd0OYwngU3rDQ";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -159,16 +234,20 @@
                 });
                 if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
                 const result = await response.json();
-                return result.candidates[0].content.parts[0].text;
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts) {
+                     return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    return "Sorry, the AI returned an unexpected response format.";
+                }
             } catch (error) {
                 console.error("Error calling Gemini API:", error);
-                return "Sorry, there was an error getting a response from the AI.";
+                return `Sorry, there was an error getting a response from the AI. (${error.message})`;
             }
         }
 
         function renderPage(pageKey) {
             state.currentPage = pageKey;
-            
             const pageData = masterQuizData[pageKey];
             quizTitle.textContent = pageData.title;
             quizContainer.innerHTML = '';
@@ -198,43 +277,80 @@
                         </label>
                     `).join('')}
                 </div>
-                <div class="mt-4">
+                <div class="mt-4 check-btn-container">
                     <button data-index="${index}" class="individual-check-btn bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-1 px-4 rounded-md flex items-center gap-2">Check Answer</button>
                 </div>
                 <div class="feedback-container mt-3"></div>
             `;
             return questionDiv;
         }
+
+        async function handleIndividualCheck(btn) {
+            const index = btn.dataset.index;
+            const pageKey = state.currentPage;
+            const item = masterQuizData[pageKey].questions[index];
+            const questionDiv = document.getElementById(`q-${pageKey}-${index}`);
+            const userAnswer = (questionDiv.querySelector(`input[name=question${index}]:checked`) || {}).value;
+
+            if (!userAnswer) {
+                alert('Please select an answer first!');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = `<span class="small-loader loader"></span> Checking...`;
+
+            const prompt = `Based on a university lecture, evaluate this answer for the question "${item.question}". The correct answer is "${item.correctAnswer}". The user chose "${userAnswer}". Explain clearly and concisely why the user is correct or incorrect.`;
+            const feedbackText = await callGemini(prompt);
+            
+            const feedbackContainer = questionDiv.querySelector('.feedback-container');
+            const isCorrect = userAnswer === item.correctAnswer;
+            const cardClass = isCorrect ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800';
+            
+            // Add new AI feature buttons to the feedback card
+            feedbackContainer.innerHTML = `
+                <div class="p-3 rounded-lg border-l-4 ${cardClass}">
+                    ${feedbackText.replace(/\n/g, '<br>')}
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <button data-concept="${item.concept}" data-mode="simplify" class="ai-feature-btn bg-gray-600 hover:bg-gray-700 text-white text-xs font-semibold py-1 px-3 rounded-md flex items-center gap-1">✨ Explain Simply</button>
+                        <button data-concept="${item.concept}" data-mode="example" class="ai-feature-btn bg-gray-600 hover:bg-gray-700 text-white text-xs font-semibold py-1 px-3 rounded-md flex items-center gap-1">✨ Give a Real-World Example</button>
+                    </div>
+                    <div class="enhancement-container mt-3 p-3 bg-white/50 rounded-md hidden"></div>
+                </div>
+            `;
+
+            questionDiv.querySelectorAll('input[type=radio]').forEach(radio => radio.disabled = true);
+            btn.closest('.check-btn-container').remove();
+        }
         
         // --- Event Handlers ---
         
         quizContainer.addEventListener('click', async (e) => {
             if (e.target.classList.contains('individual-check-btn')) {
+                handleIndividualCheck(e.target);
+            }
+            if (e.target.classList.contains('ai-feature-btn')) {
                 const btn = e.target;
-                const index = btn.dataset.index;
-                const pageKey = state.currentPage;
-                const item = masterQuizData[pageKey].questions[index];
-                const questionDiv = document.getElementById(`q-${pageKey}-${index}`);
-                const userAnswer = (questionDiv.querySelector(`input[name=question${index}]:checked`) || {}).value;
-
-                if (!userAnswer) {
-                    alert('Please select an answer first!');
-                    return;
-                }
+                const concept = btn.dataset.concept;
+                const mode = btn.dataset.mode;
+                const container = btn.closest('.p-3').querySelector('.enhancement-container');
                 
                 btn.disabled = true;
-                btn.innerHTML = `<span class="small-loader loader"></span> Checking...`;
+                btn.innerHTML = `<span class="small-loader loader"></span> Generating...`;
+                container.classList.remove('hidden');
+                container.innerHTML = `<div class="loader small-loader mx-auto"></div>`;
 
-                const prompt = `Evaluate this answer for the question "${item.question}". The correct answer is "${item.correctAnswer}". The user chose "${userAnswer}". Explain clearly and concisely why the user is correct or incorrect based on data warehousing concepts.`;
-                const feedbackText = await callGemini(prompt);
+                let prompt = "";
+                if (mode === 'simplify') {
+                    prompt = `Explain the data concept "${concept}" in very simple, concise terms, as if for a beginner.`;
+                } else {
+                    prompt = `Provide a single, clear, and modern real-world example of the data concept "${concept}".`;
+                }
+                const explanation = await callGemini(prompt);
+                container.innerHTML = explanation.replace(/\n/g, '<br>');
                 
-                const feedbackContainer = questionDiv.querySelector('.feedback-container');
-                const isCorrect = userAnswer === item.correctAnswer;
-                const cardClass = isCorrect ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800';
-                feedbackContainer.innerHTML = `<div class="p-3 rounded-lg border-l-4 ${cardClass}">${feedbackText.replace(/\n/g, '<br>')}</div>`;
-
-                questionDiv.querySelectorAll('input[type=radio]').forEach(radio => radio.disabled = true);
-                btn.remove();
+                btn.disabled = false;
+                btn.innerHTML = `✨ ${mode === 'simplify' ? 'Explain Simply' : 'Give a Real-World Example'}`;
             }
         });
         
@@ -243,33 +359,61 @@
         });
 
         newQuestionBtn.addEventListener('click', async () => {
+             await generateQuestions(1);
+        });
+        
+        bulkGenerateBtn.addEventListener('click', () => {
+            bulkModal.classList.remove('hidden');
+        });
+
+        cancelBulkBtn.addEventListener('click', () => {
+            bulkModal.classList.add('hidden');
+        });
+
+        confirmBulkBtn.addEventListener('click', async () => {
+            const amount = document.getElementById('bulk-amount-input').value;
+            bulkModal.classList.add('hidden');
+            if (amount > 0 && amount <=10) {
+                await generateQuestions(amount);
+            }
+        });
+        
+        async function generateQuestions(count) {
             newQuestionBtn.disabled = true;
+            bulkGenerateBtn.disabled = true;
             newQuestionLoader.classList.remove('hidden');
             
             const pageData = masterQuizData[state.currentPage];
             const existingQuestions = pageData.questions.map(q => q.question).join('; ');
-            const prompt = `Based on this lecture summary: "${pageData.summary}", create one new, challenging multiple-choice quiz question that is different from these existing questions: "${existingQuestions}". Format the response as a single, valid JSON object with keys: "question", "options" (array of 4 strings), and "correctAnswer". Do not add any other text.`;
+            
+            const prompt = `Based *only* on the following summary from a university lecture on "${pageData.title}": "${pageData.summary}". Create ${count} new, challenging, and unique multiple-choice quiz questions that are different from these existing questions: "${existingQuestions}". Each question must be answerable using *only* the provided summary. Format your response as a single, valid JSON array of objects, even if you are only creating one question. Each object must have keys: "question", "options" (an array of 4 strings), and "correctAnswer". Do not include any other text or markdown formatting.`;
 
             const responseText = await callGemini(prompt);
             newQuestionLoader.classList.add('hidden');
 
             try {
                 const jsonString = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                const newQ = JSON.parse(jsonString);
+                const newQuestions = JSON.parse(jsonString);
                 
-                masterQuizData[state.currentPage].questions.push(newQ);
-                const newIndex = masterQuizData[state.currentPage].questions.length - 1;
-                const questionElement = createQuestionElement(newQ, newIndex, state.currentPage);
-                quizContainer.appendChild(questionElement);
-                questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const questionsArray = Array.isArray(newQuestions) ? newQuestions : [newQuestions];
 
+                questionsArray.forEach(newQ => {
+                    if (newQ.question && newQ.options && newQ.correctAnswer) {
+                        masterQuizData[state.currentPage].questions.push(newQ);
+                        const newIndex = masterQuizData[state.currentPage].questions.length - 1;
+                        const questionElement = createQuestionElement(newQ, newIndex, state.currentPage);
+                        quizContainer.appendChild(questionElement);
+                        questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
             } catch (e) {
-                console.error("Failed to parse new question JSON:", e, "Raw response:", responseText);
-                alert("Sorry, there was an error generating a new question. Please try again.");
+                console.error("Failed to parse new questions JSON:", e, "Raw response:", responseText);
+                alert("Sorry, there was an error generating valid new questions. The AI may have returned a malformed response. Please try again.");
             }
             newQuestionBtn.disabled = false;
-        });
-        
+            bulkGenerateBtn.disabled = false;
+        }
+
         // --- Initialization ---
         
         function initializeApp() {
