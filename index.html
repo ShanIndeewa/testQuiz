@@ -307,7 +307,6 @@
             const isCorrect = userAnswer === item.correctAnswer;
             const cardClass = isCorrect ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800';
             
-            // Add new AI feature buttons to the feedback card
             feedbackContainer.innerHTML = `
                 <div class="p-3 rounded-lg border-l-4 ${cardClass}">
                     ${feedbackText.replace(/\n/g, '<br>')}
@@ -386,7 +385,7 @@
             const pageData = masterQuizData[state.currentPage];
             const existingQuestions = pageData.questions.map(q => q.question).join('; ');
             
-            const prompt = `Based *only* on the following summary from a university lecture on "${pageData.title}": "${pageData.summary}". Create ${count} new, challenging, and unique multiple-choice quiz questions that are different from these existing questions: "${existingQuestions}". Each question must be answerable using *only* the provided summary. Format your response as a single, valid JSON array of objects, even if you are only creating one question. Each object must have keys: "question", "options" (an array of 4 strings), and "correctAnswer". Do not include any other text or markdown formatting.`;
+            const prompt = `Based *only* on the following summary from a university lecture on "${pageData.title}": "${pageData.summary}". Create ${count} new, challenging, and unique multiple-choice quiz questions that are different from these existing questions: "${existingQuestions}". Each question must be answerable using *only* the provided summary. Format your response as a single, valid JSON array of objects, even if you are only creating one question. Each object must have keys: "question", "options" (an array of 4 strings), "correctAnswer", and "concept" (a short 2-4 word string describing the core topic of the question). Do not include any other text or markdown formatting.`;
 
             const responseText = await callGemini(prompt);
             newQuestionLoader.classList.add('hidden');
