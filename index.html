@@ -149,7 +149,7 @@
         // --- Core Functions ---
 
         async function callGemini(prompt) {
-           const apiKey = "${{ secrets.GEMINI_API_KEY }}|g"; // Use a placeholder
+           const apiKey = "YOUR_API_KEY_PLACEHOLDER"; // Use a placeholder
            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             try {
                 const response = await fetch(apiUrl, {
